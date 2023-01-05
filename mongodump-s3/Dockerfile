@@ -19,6 +19,10 @@ ADD https://github.com/Obmondo/mongodump-s3/blob/mongodump_100.6.1/entrypoint.sh
 ADD https://github.com/Obmondo/mongodump-s3/blob/mongodump_100.6.1/backup.sh /usr/local/bin/backup
 ADD https://github.com/Obmondo/mongodump-s3/blob/mongodump_100.6.1/mongouri.py /usr/local/bin/mongouri
 
+RUN chmod 775 /usr/local/bin/entrypoint
+RUN chmod 775 /usr/local/bin/backup
+RUN chmod 775 /usr/local/bin/mongouri
+
 VOLUME /backup
 
 CMD /usr/local/bin/entrypoint
