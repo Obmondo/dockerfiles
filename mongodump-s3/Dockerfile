@@ -25,5 +25,4 @@ RUN chmod 775 /usr/local/bin/mongouri
 
 VOLUME /backup
 
-# CMD /usr/local/bin/entrypoint
-CMD sleep 604800
+CMD /usr/local/bin/entrypoint
