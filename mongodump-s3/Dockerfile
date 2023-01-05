@@ -15,9 +15,9 @@ RUN mkdir /backup
 
 ENV S3_PATH=mongodb AWS_DEFAULT_REGION=us-east-1
 
-ADD https://github.com/Obmondo/mongodump-s3/blob/mongodump_100.6.1/entrypoint.sh /usr/local/bin/entrypoint
-ADD https://github.com/Obmondo/mongodump-s3/blob/mongodump_100.6.1/backup.sh /usr/local/bin/backup
-ADD https://github.com/Obmondo/mongodump-s3/blob/mongodump_100.6.1/mongouri.py /usr/local/bin/mongouri
+ADD https://raw.githubusercontent.com/Obmondo/mongodump-s3/mongodump_100.6.1/entrypoint.sh /usr/local/bin/entrypoint
+ADD https://raw.githubusercontent.com/Obmondo/mongodump-s3/mongodump_100.6.1/backup.sh /usr/local/bin/backup
+ADD https://raw.githubusercontent.com/Obmondo/mongodump-s3/mongodump_100.6.1/mongouri.py /usr/local/bin/mongouri
 
 RUN chmod 775 /usr/local/bin/entrypoint
 RUN chmod 775 /usr/local/bin/backup
