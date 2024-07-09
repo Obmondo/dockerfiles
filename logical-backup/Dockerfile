@@ -19,7 +19,7 @@ RUN apt-get update     \
     && unzip awscliv2.zip \
     && ./aws/install
 
-COPY dump.sh /dump.sh
+COPY dump.sh ./
 RUN chmod +x /dump.sh
 
 ENV PG_DIR=/usr/lib/postgresql
