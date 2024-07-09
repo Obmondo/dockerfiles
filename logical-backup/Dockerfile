@@ -1,11 +1,10 @@
-FROM ubuntu:jammy
-LABEL maintainer="Divyam Azad divyam@obmondo.com"
+FROM postgres:15
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
 RUN apt-get update     \
     && apt-get install --no-install-recommends -y \
         apt-utils \
+        unzip \
         ca-certificates \
         lsb-release \
         pigz \
@@ -16,26 +15,12 @@ RUN apt-get update     \
         gnupg \
         gcc \
         libffi-dev \
-    && curl -sL https://aka.ms/InstallAzureCLIDeb | bash \
-    && pip3 install --upgrade pip \
-    && pip3 install --no-cache-dir awscli --upgrade \
-    && pip3 install --no-cache-dir gsutil --upgrade \
-    && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
-    && cat /etc/apt/sources.list.d/pgdg.list \
-    && curl --silent https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
-    && apt-get update \
-    && apt-get install --no-install-recommends -y  \
-        postgresql-client-16  \
-        postgresql-client-15  \
-        postgresql-client-14  \
-        postgresql-client-13  \
-        postgresql-client-12  \
-        postgresql-client-11  \
-        postgresql-client-10  \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install
 
-COPY ./* ./
+COPY dump.sh /dump.sh
+RUN chmod +x /dump.sh
 
 ENV PG_DIR=/usr/lib/postgresql
 
