@@ -2,7 +2,7 @@ name: Build Logical backup
 
 on:
   push:
-    branches: [ "logical-backup" ]
+    branches: [ "new-logical-backup" ]
     paths: 'logical-backup/**'
     tags: [ "v*" ]
 
