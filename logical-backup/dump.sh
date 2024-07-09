@@ -3,8 +3,8 @@ set +x
 
 PG_BIN=$PG_DIR/$PG_VERSION/bin
 
-export PG_HOST="output-etl-db.modeling.svc.cluster.local"
-export PG_PORT="5432"
+export PGHOST="output-etl-db.modeling.svc.cluster.local"
+export PGPORT="5432"
 
 pg_dumpall | pigz /tmp/logicalbakup.sql.gz
 
