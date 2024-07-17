@@ -7,7 +7,7 @@ IFS=$'\n\t'
 # PGHOST PGPASSWORD
 
 ALL_DB_SIZE_QUERY="select sum(pg_database_size(datname)::numeric) from pg_database;"
-PG_BIN=/usr/lib/postgresql/$PG_VERSION/bin
+PG_BIN=/usr/bin
 DUMP_SIZE_COEFF=5
 ERRORCOUNT=0
 POSTGRES_OPERATOR=spilo
@@ -21,7 +21,7 @@ function estimate_size {
 function dump {
   echo "Taking dump of ${PGDATABASE} from ${PGHOST}"
   # settings are taken from the environment
-  "$PG_BIN"/pg_dump
+  "$PG_BIN"/pg_dumpall --exclude-database='postgres'
 }
 
 function compress {
@@ -42,7 +42,7 @@ function aws_delete_objects {
   [[ ! -z "${LOGICAL_BACKUP_S3_ENDPOINT}" ]] && args+=("--endpoint-url=${LOGICAL_BACKUP_S3_ENDPOINT}")
   [[ ! -z "${LOGICAL_BACKUP_S3_REGION}" ]] && args+=("--region=${LOGICAL_BACKUP_S3_REGION}")
 
-  aws s3api delete-objects "${args[@]}" --delete Objects=["$(printf {Key=%q}, "$@")"],Quiet=true
+  aws s3api delete-objects "${args[@]}" --delete Objects=["$(printf \{Key=%q\}, "$@")"],Quiet=true
 }
 export -f aws_delete_objects
 
