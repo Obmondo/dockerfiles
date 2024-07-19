@@ -1,11 +1,12 @@
 #! /usr/bin/env bash
 
-set -eou pipefail
+set -x
 IFS=$'\n\t'
 
 ## NOTE, these env needs to be passed in the cronjob
 # PGHOST PGPASSWORD
-
+echo $PGUSER
+echo $PGPASSWORD
 ALL_DB_SIZE_QUERY="select sum(pg_database_size(datname)::numeric) from pg_database;"
 PG_BIN=/usr/lib/postgresql/$PG_VERSION/bin
 DUMP_SIZE_COEFF=5
