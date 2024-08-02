@@ -1,2 +1,2 @@
 FROM busybox
-COPY bw7 /bw7
+COPY keycloak-theme/Dockerfile /bw7
