@@ -34,6 +34,10 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # List the files in the repository
+      - name: List repository files
+        run: "ls -al ./repository-nginx/"
+
       - name: Build & push container image
         id: docker_build
         uses: docker/build-push-action@v2
