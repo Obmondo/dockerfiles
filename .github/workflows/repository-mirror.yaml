@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'repository-mirror/**'
-      - '.gitea/workflows/repository-mirror.yaml'
+      - '.github/workflows/repository-mirror.yaml'
 
 jobs:
   build:
