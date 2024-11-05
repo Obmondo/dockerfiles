@@ -22,5 +22,5 @@ jobs:
       - name: Build and push the hello-docker Docker image
         run: |
           docker pull quay.io/keycloak/keycloak:21.1.0
-          docker image tag quay.io/keycloak/keycloak:21.1.0 ghcr.io/keycloak:21.1.0
-          docker push ghcr.io/keycloak:21.1.0
+          docker image tag quay.io/keycloak/keycloak:21.1.0 ghcr.io/obmondo/keycloak:21.1.0
+          docker push ghcr.io/obmondo/keycloak:21.1.0
