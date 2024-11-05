@@ -21,6 +21,6 @@ jobs:
 
       - name: Build and push the Docker image
         run: |
-          docker pull docker.io/traefik:v3.0.0
-          docker image tag docker.io/traefik:v3.0.0  ghcr.io/obmondo/traefik/traefik:v3.0.0
-          docker push ghcr.io/obmondo/traefik/traefik:v3.0.0
+          docker pull openpolicyagent/gatekeeper:v3.14.0
+          docker image tag openpolicyagent/gatekeeper:v3.14.0  ghcr.io/obmondo/gatekeeper:v3.14.0
+          docker push ghcr.io/obmondo/gatekeeper:v3.14.0
