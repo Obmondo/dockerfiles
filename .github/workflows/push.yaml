@@ -21,6 +21,6 @@ jobs:
 
       - name: Build and push the hello-docker Docker image
         run: |
-          docker pull docker.io/traefik:v3.0.0 
-          docker image tag docker.io/traefik:v3.0.0  ghcr.io/obmondo/traefik:v3.0.0
+          docker pull docker.io/library/traefik:v3.0.0
+          docker image tag docker.io/library/traefik:v3.0.0  ghcr.io/obmondo/traefik:v3.0.0
           docker push ghcr.io/obmondo/traefik:v3.0.0
