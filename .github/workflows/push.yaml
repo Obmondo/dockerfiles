@@ -22,5 +22,5 @@ jobs:
       - name: Build and push the Docker image
         run: |
           docker pull docker.io/traefik/whoami:v1.10.3
-          docker image tag docker.io/traefik/whoami:v1.10.3  ghcr.io/obmondo/whoami:v1.10.3
-          docker push ghcr.io/obmondo/whoami:v1.10.3
+          docker image tag docker.io/traefik/whoami:v1.10.3  ghcr.io/obmondo/traefik/whoami:v1.10.3
+          docker push ghcr.io/obmondo/traefik/whoami:v1.10.3
