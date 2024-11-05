@@ -1,4 +1,3 @@
-
 name: publish
 
 on:
@@ -7,31 +6,21 @@ on:
       - docker-limit
 
 jobs:
+  publish-hello-docker-image:
+    runs-on: ubuntu-latest
 
-publish-hello-docker-image:
+    steps:
+      - uses: actions/checkout@v2
 
-runs-on: ubuntu-latest
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-steps:
-
-- uses: actions/checkout@v2
-
-- name: Login to GitHub Container Registry
-
-uses: docker/login-action@v1
-
-with:
-
-registry: ghcr.io
-
-username: ${{ github.actor }}
-
-password: ${{ secrets.GITHUB_TOKEN }}
-
-- name: Build the hello-docker Docker image
-
-run: |
-
-      docker pull opensearchproject/opensearch:2.11.1
-      docker image tag opensearchproject/opensearch:2.11.1 ghcr.io/obmondo/opensearchproject:2.11.1
-      docker push ghcr.io/obmondo/opensearchproject:2.11.1
+      - name: Build and push the hello-docker Docker image
+        run: |
+          docker pull opensearchproject/opensearch:2.11.1
+          docker image tag opensearchproject/opensearch:2.11.1 ghcr.io/obmondo/opensearchproject:2.11.1
+          docker push ghcr.io/obmondo/opensearchproject:2.11.1
