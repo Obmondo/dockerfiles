@@ -21,6 +21,6 @@ jobs:
 
       - name: Build and push the hello-docker Docker image
         run: |
-          docker pull opensearchproject/opensearch:2.11.1
-          docker image tag opensearchproject/opensearch:2.11.1 ghcr.io/obmondo/opensearchproject:2.11.1
-          docker push ghcr.io/obmondo/opensearchproject:2.11.1
+          docker pull opensearchproject/busybox:latest
+          docker image tag opensearchproject/busybox:latest ghcr.io/obmondo/busybox:latest
+          docker push ghcr.io/obmondo/busybox:latest
