@@ -1,0 +1,44 @@
+# cat /var/lib/node_exporter/textfile_collector/htzhel1-ax41na.enableit.prom 
+# HELP puppet_report_resources Resources broken down by their state
+# TYPE puppet_report_resources gauge
+# HELP puppet_report_time Resource apply times
+# TYPE puppet_report_time gauge
+# HELP puppet_report_changes Changed resources in the last puppet run
+# TYPE puppet_report_changes gauge
+# HELP puppet_report_events Resource application events
+# TYPE puppet_report_events gauge
+# HELP puppet_report Unix timestamp of the last puppet run
+# TYPE puppet_report gauge
+# HELP puppet_transaction_completed transaction completed status of the last puppet run
+# TYPE puppet_transaction_completed gauge
+# HELP puppet_cache_catalog_status whether a cached catalog was used in the run, and if so, the reason that it was used
+# TYPE puppet_cache_catalog_status gauge
+# HELP puppet_status the status of the client run
+# TYPE puppet_status gauge
+# Old metrics
+# New metrics
+puppet_report_resources{name="Changed",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_report_resources{name="Corrective change",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_report_resources{name="Failed",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_report_resources{name="Failed to restart",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_report_resources{name="Out of sync",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_report_resources{name="Restarted",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_report_resources{name="Scheduled",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_report_resources{name="Skipped",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_report_resources{name="Total",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_report_time{name="Fact generation",environment="production",host="htzhel1-ax41na.enableit"} 6.693851238116622
+puppet_report_time{name="Startup time",environment="production",host="htzhel1-ax41na.enableit"} 0.346151763
+puppet_report_time{name="Total",environment="production",host="htzhel1-ax41na.enableit"} 761.693690136
+puppet_report_changes{name="Total",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_report_events{name="Failure",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_report_events{name="Success",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_report_events{name="Total",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_report{environment="production",host="htzhel1-ax41na.enableit"} 1724301654.438
+puppet_transaction_completed{environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_cache_catalog_status{state="not_used",environment="production",host="htzhel1-ax41na.enableit"} 1
+puppet_cache_catalog_status{state="explicitly_requested",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_cache_catalog_status{state="on_failure",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_status{state="failed",environment="production",host="htzhel1-ax41na.enableit"} 1
+puppet_status{state="changed",environment="production",host="htzhel1-ax41na.enableit"} 0
+puppet_status{state="unchanged",environment="production",host="htzhel1-ax41na.enableit"} 0
+THIS IS PAGE 2 ENDING
