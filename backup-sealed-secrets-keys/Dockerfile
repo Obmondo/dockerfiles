@@ -22,10 +22,11 @@ RUN apt-get update
 RUN apt-get install -y kubectl --no-install-recommends
 
 # Download and install AWS CLI v2
-RUN wget --quiet https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
-RUN unzip awscli-exe-linux-x86_64.zip
-RUN aws/install
-RUN rm -fr aws/ awscli-exe-linux-x86_64.zip
+RUN export CPU_ARCHITECTURE=$([ "$(uname -m)" = "x86_64" ] && echo "x86_64" || echo "aarch64") &&\
+	wget https://awscli.amazonaws.com/awscli-exe-linux-"${CPU_ARCHITECTURE}".zip && \
+	unzip awscli-exe-linux-"${CPU_ARCHITECTURE}".zip && \
+	aws/install && \
+	rm -fr aws/ awscli-exe-linux-"${CPU_ARCHITECTURE}".zip
 
 # Install AZURE cli
 RUN apt-get install -y azure-cli --no-install-recommends
