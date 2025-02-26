@@ -10,7 +10,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go build -o hetzner-failover-script ./cmd/
+RUN CGO_ENABLED=0 go build -o hetzner-failover-script ./cmd/
 
 #--- Packager stage ---
 
