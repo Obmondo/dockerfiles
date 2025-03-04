@@ -1,0 +1,45 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'mailcow-exporter/**'
+      - '.github/workflows/mailcow-exporter.yaml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Generate container metadata
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/obmondo/dockerfiles/mailcow-exporter
+          tags: |
+            type=semver,pattern={{version}},value=v1.4.0
+          flavor: |
+            latest=false
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push container image
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: ./mailcow-exporter
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
