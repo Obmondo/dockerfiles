@@ -20,9 +20,13 @@ function estimate_size {
 }
 
 function dump {
-  echo "Taking dump of ${PGDATABASE} from ${PGHOST}"
-  # settings are taken from the environment
-  "$PG_BIN"/pg_dumpall --exclude-database='postgres'
+  echo "Taking dump from ${PGHOST} using ${USE_PG_DUMP:-pg_dumpall}"
+
+  if [[ "${USE_PG_DUMP:-}" == "true" ]]; then
+    "$PG_BIN"/pg_dump
+  else
+    "$PG_BIN"/pg_dumpall --exclude-database='postgres'
+  fi
 }
 
 function compress {
