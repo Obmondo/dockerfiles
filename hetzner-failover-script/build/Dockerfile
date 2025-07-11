@@ -7,21 +7,21 @@ FROM golang:1.23.0 AS builder
 WORKDIR /app
 
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod download -x
 
 COPY . .
-RUN CGO_ENABLED=0 go build -o hetzner-failover-script ./cmd/
+RUN CGO_ENABLED=0 go build -ldflags="-w -w" -v -o hetzner-failover-script ./cmd/
 
 #--- Packager stage ---
 
-FROM golang:1.23.0 AS packages
+FROM alpine:3.22.0
 
 # Set the maintainer label
 LABEL org.opencontainers.image.authors="ashish@obmondo.com, archisman@obmondo.com"
 
-WORKDIR /root/
+WORKDIR /app
 
 COPY --from=builder /app/hetzner-failover-script .
 
-CMD ["./hetzner-failover-script"]
+CMD ["/app/hetzner-failover-script"]
 
