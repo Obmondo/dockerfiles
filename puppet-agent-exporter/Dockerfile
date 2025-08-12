@@ -34,6 +34,5 @@ COPY --from=builder /app/exporter .
 # Expose port 8080
 EXPOSE 8080
 
-
 # Command to run the executable
 ENTRYPOINT ["./exporter"]
