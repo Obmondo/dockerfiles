@@ -23,7 +23,7 @@ jobs:
         with:
           images: ghcr.io/obmondo/puppet-agent-exporter
           tags: |
-            type=semver,pattern={{version}},value=v0.0.1
+            v0.0.1
           flavor: |
             latest=false
       - name: Login to GitHub Container Registry
