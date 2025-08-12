@@ -21,7 +21,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: ghcr.io/obmondo/postgres-logical-backup
+          images: ghcr.io/obmondo/puppet-agent-exporter
           tags: |
             type=semver,pattern={{version}},value=v0.0.1
           flavor: |
