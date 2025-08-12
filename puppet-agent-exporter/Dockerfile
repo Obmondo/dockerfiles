@@ -1,5 +1,5 @@
 # Use the official Golang image to build the application
-FROM golang:1.23 AS builder
+FROM golang:1.24 AS builder
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
@@ -20,7 +20,7 @@ COPY puppet-agent-exporter/exporter/ ./
 RUN CGO_ENABLED=0 go build -o exporter .
 
 # Start a new stage from scratch
-FROM alpine:latest
+FROM alpine:3.22.1
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
@@ -31,7 +31,7 @@ COPY --from=builder /app/exporter .
 # Used for testing
 # COPY --from=builder /app/metrics/ /var/lib/prometheus-dropzone/
 
-# Expose port 8080 
+# Expose port 8080
 EXPOSE 8080
 
 # Command to run the executable
