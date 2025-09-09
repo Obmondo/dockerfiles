@@ -27,4 +27,4 @@ jobs:
         run: docker tag docker.io/velero/velero:v1.16.1 ghcr.io/obmondo/velero:v1.16.1
 
       - name: Push image to GHCR
-        run: docker push ghcr.io/obmondo/velero/velero:v1.16.1
+        run: docker push ghcr.io/obmondo/velero:v1.16.1
