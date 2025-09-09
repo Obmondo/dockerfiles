@@ -20,10 +20,10 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Pull Velero image from Docker Hub
-        run: docker pull docker.io/bitnami/kafka:3.7.1-debian-12-r0
+        run: docker pull memcached:1.6.36-alpine
 
       - name: Tag image for GHCR
-        run: docker tag docker.io/bitnami/kafka:3.7.1-debian-12-r0 ghcr.io/obmondo/dockerfiles/repository-mirror:3.7.1-debian-12-r0
+        run: docker tag memcached:1.6.36-alpine ghcr.io/obmondo/dockerfiles/repository-mirror:1.6.36-alpine
 
       - name: Push image to GHCR
-        run: docker push ghcr.io/obmondo/dockerfiles/repository-mirror:3.7.1-debian-12-r0
+        run: docker push ghcr.io/obmondo/dockerfiles/repository-mirror:1.6.36-alpine
