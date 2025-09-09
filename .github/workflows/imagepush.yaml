@@ -19,12 +19,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Pull Velero image from Docker Hub
         run: docker pull docker.io/velero/velero:v1.16.1
 
       - name: Tag image for GHCR
-        run: docker tag docker.io/velero/velero:v1.16.1 ghcr.io/obmondo/velero:v1.16.1
+        run: docker tag docker.io/velero/velero:v1.16.1 ghcr.io/obmondo/dockerfiles/repository-mirror:v1.16.1
 
       - name: Push image to GHCR
-        run: docker push ghcr.io/obmondo/velero:v1.16.1
+        run: docker push ghcr.io/obmondo/dockerfiles/repository-mirror:v1.16.1
