@@ -2,6 +2,7 @@ name: Build and Push Docker Image
 
 on:
   push:
+    tags: [ "v*" ]
     branches: [ main ]
     paths:
       - 'repository-snapshot/**'
@@ -24,7 +25,7 @@ jobs:
         with:
           images: ghcr.io/obmondo/dockerfiles/repository-snapshot
           tags: |
-            type=semver,pattern={{version}},value=v1.0.0
+            type=semver,pattern={{version}},value=v3.1.5
           flavor: |
             latest=false
       - name: Login to GitHub Container Registry
