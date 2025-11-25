@@ -2,9 +2,10 @@ name: Build Logical backup
 
 on:
   push:
-    branches: ["*"]
-    paths: "postgres-logical-backup/**"
-    tags: ["v*"]
+    branches: ["main"]
+    paths:
+      - "postgres-logical-backup/**"
+      - ".github/workflows/postgres-logical-backup.yml"
 
 jobs:
   build-and-push:
@@ -23,9 +24,8 @@ jobs:
         with:
           images: ghcr.io/obmondo/postgres-logical-backup
           tags: |
-            type=ref,event=branch,enable=${{ !endsWith(github.ref, github.event.repository.default_branch) }}
-            type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
-            type=ref,event=tag
+            type=raw,value=latest
+            type=semver,pattern={{version}},value=v3.1.6
           flavor: |
             latest=false
       - name: Login to GitHub Container Registry
