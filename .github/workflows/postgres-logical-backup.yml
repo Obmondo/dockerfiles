@@ -2,9 +2,9 @@ name: Build Logical backup
 
 on:
   push:
-    branches: [ "*" ]
-    paths: 'postgres-logical-backup/**'
-    tags: [ "v*" ]
+    branches: ["*"]
+    paths: "postgres-logical-backup/**"
+    tags: ["v*"]
 
 jobs:
   build-and-push:
@@ -44,3 +44,4 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/amd64,linux/arm64
