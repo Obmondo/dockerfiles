@@ -25,7 +25,7 @@ jobs:
           images: ghcr.io/obmondo/g10k
           tags: |
             type=raw,value=latest
-            type=semver,pattern={{version}},value=v0.9.9
+            type=semver,pattern={{version}},value=v0.9.10
           flavor: |
             latest=false
 
