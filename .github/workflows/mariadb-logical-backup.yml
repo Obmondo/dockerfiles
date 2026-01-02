@@ -2,10 +2,10 @@ name: Build Logical backup
 
 on:
   push:
-    branches: ["main"]
+    branches: ["mariadb-logical-backup"]
     paths:
-      - "postgres-logical-backup/**"
-      - ".github/workflows/postgres-logical-backup.yml"
+      - "mariadb-logical-backup/**"
+      - ".github/workflows/mariadb-logical-backup.yml"
 
 jobs:
   build-and-push:
@@ -22,7 +22,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: ghcr.io/obmondo/postgres-logical-backup
+          images: ghcr.io/obmondo/mariadb-logical-backup
           tags: |
             type=raw,value=latest
             type=semver,pattern={{version}},value=v3.1.8
@@ -39,7 +39,7 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v2
         with:
-          file: "./postgres-logical-backup/Dockerfile"
+          file: "./mariadb-logical-backup/Dockerfile"
           context: .
           labels: ${{ steps.meta.outputs.labels }}
           push: true
