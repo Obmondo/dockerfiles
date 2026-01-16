@@ -3,6 +3,8 @@ LABEL maintainer="Divyam Azad divyam@obmondo.com"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+ARG PIP_VERSION="25.3"
+
 RUN apt-get update     \
     && apt-get install --no-install-recommends -y \
         apt-utils \
@@ -17,7 +19,7 @@ RUN apt-get update     \
         gcc \
         libffi-dev \
     && curl -sL https://aka.ms/InstallAzureCLIDeb | bash \
-    && pip3 install --upgrade pip \
+    && pip3 install --no-cache-dir pip=="${PIP_VERSION}" \
     && pip3 install --no-cache-dir awscli --upgrade \
     && pip3 install --no-cache-dir gsutil --upgrade \
     && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \

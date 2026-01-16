@@ -7,7 +7,8 @@ IFS=$'\n\t'
 # PGHOST PGPASSWORD
 
 ALL_DB_SIZE_QUERY="select sum(pg_database_size(datname)::numeric) from pg_database;"
-PG_BIN=/usr/lib/postgresql/$PG_VERSION/bin
+
+# PG_BIN=/usr/lib/postgresql/$PG_VERSION/bin
 DUMP_SIZE_COEFF=5
 ERRORCOUNT=0
 POSTGRES_OPERATOR=spilo
@@ -16,16 +17,16 @@ LOGICAL_BACKUP_S3_RETENTION_TIME=${LOGICAL_BACKUP_S3_RETENTION_TIME:=""}
 LOGICAL_BACKUP_S3_ENDPOINT=${LOGICAL_BACKUP_S3_ENDPOINT:-}
 
 function estimate_size {
-  "$PG_BIN"/psql -tqAc "${ALL_DB_SIZE_QUERY}"
+  psql -tqAc "${ALL_DB_SIZE_QUERY}"
 }
 
 function dump {
   echo "Taking dump from ${PGHOST} using ${USE_PG_DUMP:-pg_dumpall}"
 
   if [[ "${USE_PG_DUMP:-}" == "true" ]]; then
-    "$PG_BIN"/pg_dump
+    pg_dump --verbose
   else
-    "$PG_BIN"/pg_dumpall --exclude-database='postgres'
+    pg_dumpall --exclude-database='postgres' --verbose
   fi
 }
 
@@ -105,7 +106,7 @@ function aws_upload {
   [[ ! -z "${LOGICAL_BACKUP_S3_REGION}" ]] && args+=("--region=${LOGICAL_BACKUP_S3_REGION}")
 
   echo "Uploading dump to s3"
-  aws s3 cp - "$PATH_TO_BACKUP" "${args[@]//\'/}"
+  aws s3 cp - "$PATH_TO_BACKUP" "${args[@]}"
 }
 
 function gcs_upload {
@@ -130,7 +131,43 @@ if [ "$LOGICAL_BACKUP_PROVIDER" == "az" ]; then
   dump | compress > /tmp/azure-backup.sql.gz
   az_upload /tmp/azure-backup.sql.gz
 else
-  dump | compress | upload
+  # Backup all the databases sequentially using pg_dump if PGDATABASE is not set
+  if [[ "${USE_PG_DUMP:-}" == "true" ]] && [[ -z "${PGDATABASE:-}" ]]; then
+    GET_DATABASE_LIST_FOR_USER_QUERY="SELECT datname FROM pg_database WHERE datistemplate = false;"
+    DATABASES=$(psql -U $PGUSER -tqAc $GET_DATABASE_LIST_FOR_USER_QUERY)
+
+    echo "Combined backup for databases: $DATABASES"
+    
+    # output all dumps sequentially
+    function combined_dump {
+      if [[ "${BACKUP_ONLY_DATABASES:-}" != "true" ]]; then 
+        echo "-- STARTING GLOBAL OBJECTS DUMP (ROLES & PASSWORDS)"
+        pg_dumpall --globals-only --verbose
+      fi
+
+      for DB in $DATABASES; do
+        echo "-- --- PROCESSING DATABASE: $DB ---"
+        
+        # echo "DROP DATABASE $DB;"
+        if [[ "$DB" != "postgres" ]]; then
+          # Force disconnect any connected apps
+          echo "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DB' AND pid <> pg_backend_pid();"
+
+          # Drop and Recreate
+          echo "DROP DATABASE IF EXISTS $DB;"
+          echo "CREATE DATABASE $DB;"
+          echo "\\connect $DB"
+          pg_dump -d "$DB" --verbose
+        fi
+      done
+    }
+    
+    combined_dump | compress | upload
+    # exit $?
+  else
+    dump | compress | upload
+  fi
+  
   [[ ${PIPESTATUS[0]} != 0 || ${PIPESTATUS[1]} != 0 || ${PIPESTATUS[2]} != 0 ]] && (( ERRORCOUNT += 1 ))
   set +x
   exit $ERRORCOUNT
