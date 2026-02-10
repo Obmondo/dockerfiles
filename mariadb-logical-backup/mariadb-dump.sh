@@ -4,7 +4,7 @@ set -eou pipefail
 IFS=$'\n\t'
 
 ## Required Env passed from CronJob:
-# MARIADB_HOST, MARIADB_USER, MARIADB_PASSWORD (or use .my.cnf)
+# MARIADB_HOST, MARIADB_USER, MARIADB_PASSWORD, MARIADB_DATABASE (or use .my.cnf)
 # LOGICAL_BACKUP_PROVIDER, LOGICAL_BACKUP_S3_BUCKET, etc.
 
 # MariaDB query to get total size of all databases in bytes
@@ -24,27 +24,29 @@ function estimate_size {
 }
 
 function dump {
-  echo "Taking dump from ${MARIADB_HOST} using mariadb-dump"
+  echo "Taking dump from ${MARIADB_HOST} using mariadb-dump for database ${MARIADB_DATABASE}"
   
   # --all-databases: Backup everything
   # --single-transaction: Ensure consistency for InnoDB without locking
   # --quick: Stream output to save memory
   # --routines: Include stored procedures
   mariadb-dump -h "$MARIADB_HOST" -u "$MARIADB_USER" -p"$MARIADB_PASSWORD" -P "$MARIADB_PORT" \
-    --all-databases \
-    --system=users \
-    --single-transaction \
-    --quick \
-    --routines \
-    --events \
-    --skip-ssl \
-    --insert-ignore \
-    --verbose
+      --single-transaction \
+      --quick \
+      --routines \
+      --events \
+      --skip-ssl \
+      --insert-ignore \
+      --verbose \
+      "$MARIADB_DATABASE"
 }
 
 function compress {
-  # Use pigz for multi-threaded compression if available, else gzip
-  command -v pigz >/dev/null 2>&1 && pigz || gzip
+  if command -v pigz &> /dev/null; then
+    pigz
+  else
+    gzip
+  fi
 }
 
 function az_upload {
@@ -134,5 +136,6 @@ else
   # Stream dump directly to S3 to save disk space
   dump | compress | upload
   [[ ${PIPESTATUS[0]} != 0 || ${PIPESTATUS[1]} != 0 || ${PIPESTATUS[2]} != 0 ]] && (( ERRORCOUNT += 1 ))
+  set +x
   exit $ERRORCOUNT
 fi

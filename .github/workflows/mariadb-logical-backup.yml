@@ -2,7 +2,7 @@ name: Build Logical backup
 
 on:
   push:
-    branches: ["main"]
+    branches: ["mariadb-logical-backup"]
     paths:
       - "mariadb-logical-backup/**"
       - ".github/workflows/mariadb-logical-backup.yml"
@@ -25,7 +25,7 @@ jobs:
           images: ghcr.io/obmondo/mariadb-logical-backup
           tags: |
             type=raw,value=latest
-            type=semver,pattern={{version}},value=v3.1.6
+            type=semver,pattern={{version}},value=v3.1.7
           flavor: |
             latest=false
       - name: Login to GitHub Container Registry
