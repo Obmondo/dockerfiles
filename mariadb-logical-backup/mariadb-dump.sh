@@ -4,7 +4,7 @@ set -eou pipefail
 IFS=$'\n\t'
 
 ## Required Env passed from CronJob:
-# MARIADB_HOST, MARIADB_USER, MARIADB_PASSWORD (or use .my.cnf)
+# MARIADB_HOST, MARIADB_USER, MARIADB_PASSWORD, MARIADB_DATABASE (or use .my.cnf)
 # LOGICAL_BACKUP_PROVIDER, LOGICAL_BACKUP_S3_BUCKET, etc.
 
 # MariaDB query to get total size of all databases in bytes
@@ -24,13 +24,14 @@ function estimate_size {
 }
 
 function dump {
-  echo "Taking dump from ${MARIADB_HOST} using mariadb-dump"
-
+  echo "Taking dump from ${MARIADB_HOST} using mariadb-dump for database ${MARIADB_DATABASE}"
+  
   # --all-databases: Backup everything
   # --single-transaction: Ensure consistency for InnoDB without locking
   # --quick: Stream output to save memory
   # --routines: Include stored procedures
-  mariadb-dump -h "$MARIADB_HOST" -u "$MARIADB_USER" -p"$MARIADB_PASSWORD" -P "$MARIADB_PORT" \
+  mariadb-dump -h "$MARIADB_HOST" -u "$MARIADB_USER" -p"$MARIADB_PASSWORD" -P "$MARIADB_PORT" "$MARIADB_DATABASE" \
+    --system=users \
     --single-transaction \
     --quick \
     --routines \
