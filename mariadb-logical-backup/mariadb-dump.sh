@@ -31,12 +31,10 @@ function dump {
   # --quick: Stream output to save memory
   # --routines: Include stored procedures
   mariadb-dump -h "$MARIADB_HOST" -u "$MARIADB_USER" -p"$MARIADB_PASSWORD" -P "$MARIADB_PORT" "$MARIADB_DATABASE" \
-    --system=users \
     --single-transaction \
     --quick \
     --routines \
     --events \
-    --skip-ssl \
     --insert-ignore \
     --verbose \
     "$MARIADB_DATABASE"
