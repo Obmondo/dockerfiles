@@ -31,18 +31,18 @@ function dump {
   # --quick: Stream output to save memory
   # --routines: Include stored procedures
   mariadb-dump -h "$MARIADB_HOST" -u "$MARIADB_USER" -p"$MARIADB_PASSWORD" -P "$MARIADB_PORT" \
-    --all-databases \
-    --system=users \
     --single-transaction \
     --quick \
     --routines \
     --events \
     --skip-ssl \
     --insert-ignore \
-    --verbose
+    --verbose \
+    "$MARIADB_DATABASE"
 }
 
 function compress {
+  # Use pigz for multi-threaded compression if available, else gzip
   command -v pigz >/dev/null 2>&1 && pigz || gzip
 }
 
@@ -133,6 +133,5 @@ else
   # Stream dump directly to S3 to save disk space
   dump | compress | upload
   [[ ${PIPESTATUS[0]} != 0 || ${PIPESTATUS[1]} != 0 || ${PIPESTATUS[2]} != 0 ]] && (( ERRORCOUNT += 1 ))
-  set +x
   exit $ERRORCOUNT
 fi
