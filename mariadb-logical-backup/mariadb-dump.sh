@@ -20,7 +20,7 @@ LOGICAL_BACKUP_S3_REGION=${LOGICAL_BACKUP_S3_REGION:-"us-west-1"}
 function estimate_size {
   # Connects to MariaDB to calculate data size for S3 multipart upload optimization
   mariadb -h "$MARIADB_HOST" -u "$MARIADB_USER" -p"$MARIADB_PASSWORD" \
-    --skip-ssl -Nsr -e "${ALL_DB_SIZE_QUERY}"
+    --skip-ssl -Nsr -e "${ALL_DB_SIZE_QUERY}" < /dev/null
 }
 
 function dump {
