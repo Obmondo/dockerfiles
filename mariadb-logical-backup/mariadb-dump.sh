@@ -155,7 +155,7 @@ else
   head -n 10 /tmp/raw_dump.sql || echo "Empty file"
   
   echo "Sleeping for 500s to allow manual debugging..."
-  sleep 500
+  sleep 1000
   
 
   [[ ${PIPELINE_STATUS[0]} != 0 || ${PIPELINE_STATUS[1]} != 0 || ${PIPELINE_STATUS[2]} != 0 || ${PIPELINE_STATUS[3]} != 0 ]] && (( ERRORCOUNT += 1 ))
