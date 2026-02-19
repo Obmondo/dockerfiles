@@ -1,5 +1,6 @@
 #! /usr/bin/env bash
 
+set -x
 set -eou pipefail
 IFS=$'\n\t'
 
@@ -132,22 +133,30 @@ function upload {
 if [ "$LOGICAL_BACKUP_PROVIDER" == "az" ]; then
   upload
 else
-  # Stream dump directly to S3 to save disk space
-  EXPECTED_SIZE=$(($(estimate_size) / DUMP_SIZE_COEFF))
+  # Stream dump to a local file for debugging AND upload to S3
+  # Saving:
+  # 1. /tmp/raw_dump.sql - The uncompressed output from mariadb-dump (Check this for plain text errors)
+  # 2. /tmp/dump_stderr.log - The verbose logs and errors from mariadb-dump
+  # 3. /tmp/final_upload.sql.gz - The valid gzip file sent to S3
   
-  dump | compress | aws_upload "$EXPECTED_SIZE"
+  echo "Starting debug pipeline..."
+  dump 2> /tmp/dump_stderr.log | tee /tmp/raw_dump.sql | compress | tee /tmp/final_upload.sql.gz | upload
   
-  # Capture status immediately! Running any other command will reset PIPESTATUS.
+  # Capture status immediately!
   PIPELINE_STATUS=("${PIPESTATUS[@]}")
+  
+  echo "Backup finished with status: ${PIPELINE_STATUS[*]}"
+  echo "DEBUG FILES GENERATED:"
+  echo "1. Stderr Log: /tmp/dump_stderr.log"
+  echo "2. Raw Dump:   /tmp/raw_dump.sql"
+  echo "3. Gzip File:  /tmp/final_upload.sql.gz"
+  
+  echo "Showing first 10 lines of raw dump (to check if it's SQL or error text):"
+  head -n 10 /tmp/raw_dump.sql || echo "Empty file"
+  
+  echo "Sleeping for 500s to allow manual debugging..."
+  sleep 500
 
-  # Check logic: 0=success, anything else=failure
-  if [[ ${PIPELINE_STATUS[0]} -ne 0 || ${PIPELINE_STATUS[1]} -ne 0 || ${PIPELINE_STATUS[2]} -ne 0 ]]; then
-    echo "Backup pipeline failed with status: ${PIPELINE_STATUS[*]}"
-    ERRORCOUNT=$((ERRORCOUNT + 1))
-  else
-    # Only cleanup if backup succeeded to avoid deleting the last good backup
-    aws_delete_outdated
-  fi
-
+  [[ ${PIPELINE_STATUS[0]} != 0 || ${PIPELINE_STATUS[1]} != 0 || ${PIPELINE_STATUS[2]} != 0 || ${PIPELINE_STATUS[3]} != 0 ]] && (( ERRORCOUNT += 1 ))
   exit $ERRORCOUNT
 fi
