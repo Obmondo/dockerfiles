@@ -24,7 +24,7 @@ function estimate_size {
 }
 
 function dump {
-  echo "Taking dump from ${MARIADB_HOST} using mariadb-dump for database ${MARIADB_DATABASE}"
+  echo "Taking dump from ${MARIADB_HOST} using mariadb-dump for database ${MARIADB_DATABASE}" >&2
   
   # --all-databases: Backup everything
   # --single-transaction: Ensure consistency for InnoDB without locking
@@ -41,8 +41,8 @@ function dump {
 }
 
 function compress {
-  # Use pigz for multi-threaded compression if available, else gzip
-  command -v pigz >/dev/null 2>&1 && pigz || gzip
+  # Use gzip explicitly to ensure compatibility
+  gzip
 }
 
 function az_upload {
