@@ -41,8 +41,11 @@ function dump {
 }
 
 function compress {
+  # Use pigz for multi-threaded compression if available, else gzip
+  command -v pigz >/dev/null 2>&1 && pigz || gzip
+
   # Use gzip explicitly to ensure compatibility
-  gzip
+  # gzip
 }
 
 function az_upload {
@@ -130,7 +133,7 @@ if [ "$LOGICAL_BACKUP_PROVIDER" == "az" ]; then
   upload
 else
   # Stream dump directly to S3 to save disk space
-  dump | compress | upload
+  dump | tee - | compress | upload
   [[ ${PIPESTATUS[0]} != 0 || ${PIPESTATUS[1]} != 0 || ${PIPESTATUS[2]} != 0 ]] && (( ERRORCOUNT += 1 ))
   exit $ERRORCOUNT
 fi
