@@ -18,7 +18,11 @@ LOGICAL_BACKUP_S3_RETENTION_TIME=${LOGICAL_BACKUP_S3_RETENTION_TIME:=""}
 LOGICAL_BACKUP_S3_ENDPOINT=${LOGICAL_BACKUP_S3_ENDPOINT:-}
 LOGICAL_BACKUP_S3_REGION=${LOGICAL_BACKUP_S3_REGION:-"us-west-1"}
 
-
+function estimate_size {
+  # Connects to MariaDB to calculate data size for S3 multipart upload optimization
+  mariadb -h "$MARIADB_HOST" -u "$MARIADB_USER" -p"$MARIADB_PASSWORD" \
+    --skip-ssl -Nsr -e "${ALL_DB_SIZE_QUERY}" < /dev/null
+}
 
 function dump {
   echo "Taking dump from ${MARIADB_HOST} using mariadb-dump for database ${MARIADB_DATABASE}" >&2
@@ -97,68 +101,63 @@ function aws_delete_outdated {
 }
 
 function aws_upload {
-  local FILE_PATH="$1"
+  local EXPECTED_SIZE="$1"
   PATH_TO_BACKUP="s3://${LOGICAL_BACKUP_S3_BUCKET}/${CLUSTER_NAME}/${LOGICAL_BACKUP_S3_BUCKET_SCOPE_SUFFIX}/logical_backups/$(date +%s).sql.gz"
 
   args=()
+  [[ -n "${EXPECTED_SIZE}" ]] && args+=("--expected-size=${EXPECTED_SIZE}")
   [[ -n "${LOGICAL_BACKUP_S3_ENDPOINT}" ]] && args+=("--endpoint-url=${LOGICAL_BACKUP_S3_ENDPOINT}")
   [[ -n "${LOGICAL_BACKUP_S3_REGION}" ]] && args+=("--region=${LOGICAL_BACKUP_S3_REGION}")
 
   echo "Uploading dump to S3: ${PATH_TO_BACKUP}"
-  aws s3 cp "${FILE_PATH}" "$PATH_TO_BACKUP" "${args[@]}"
+  echo "${args[@]}"
+  aws s3 cp - "$PATH_TO_BACKUP" "${args[@]}"
 }
 
 function upload {
-  local FILE_PATH="$1"
   case $LOGICAL_BACKUP_PROVIDER in
     "s3")
-      aws_upload "$FILE_PATH"
+      aws_upload $(($(estimate_size) / DUMP_SIZE_COEFF))
       aws_delete_outdated
       ;;
     "az")
-      az_upload "$FILE_PATH"
+      # Azure requires a physical file for 'az storage blob upload' in this context
+      dump | compress > /tmp/mariadb-backup.sql.gz
+      az_upload /tmp/mariadb-backup.sql.gz
+      rm /tmp/mariadb-backup.sql.gz
       ;;
   esac
 }
 
 # Execution Logic
 if [ "$LOGICAL_BACKUP_PROVIDER" == "az" ]; then
-  # Stream dump to a local file for debugging AND upload logic
+  upload
+else
+  # Stream dump to a local file for debugging AND upload to S3
   # Saving:
-  # 1. /tmp/raw_dump.sql - The uncompressed output from mariadb-dump
+  # 1. /tmp/raw_dump.sql - The uncompressed output from mariadb-dump (Check this for plain text errors)
   # 2. /tmp/dump_stderr.log - The verbose logs and errors from mariadb-dump
-  # 3. /tmp/final_upload.sql.gz - The valid gzip file to be uploaded
+  # 3. /tmp/final_upload.sql.gz - The valid gzip file sent to S3
   
-  echo "Starting backup creation..."
-  dump 2> /tmp/dump_stderr.log | tee /tmp/raw_dump.sql | compress > /tmp/final_upload.sql.gz
+  echo "Starting debug pipeline..."
+  dump 2> /tmp/dump_stderr.log | tee /tmp/raw_dump.sql | compress | tee /tmp/final_upload.sql.gz | upload
   
-  # Capture status of the generation pipeline
+  # Capture status immediately!
   PIPELINE_STATUS=("${PIPESTATUS[@]}")
-  echo "Backup generation finished with status: ${PIPELINE_STATUS[*]}"
   
-  # Debug output
+  echo "Backup finished with status: ${PIPELINE_STATUS[*]}"
   echo "DEBUG FILES GENERATED:"
   echo "1. Stderr Log: /tmp/dump_stderr.log"
   echo "2. Raw Dump:   /tmp/raw_dump.sql"
   echo "3. Gzip File:  /tmp/final_upload.sql.gz"
-  echo "Showing first 10 lines of raw dump:"
-  head -n 10 /tmp/raw_dump.sql || echo "Empty file"
-
-  if [[ ${PIPELINE_STATUS[0]} -ne 0 || ${PIPELINE_STATUS[1]} -ne 0 || ${PIPELINE_STATUS[2]} -ne 0 ]]; then
-    echo "Backup generation failed! Skipping upload."
-    ERRORCOUNT=$((ERRORCOUNT + 1))
-  else
-    echo "Backup generation successful. Proceeding to upload..."
-    upload "/tmp/final_upload.sql.gz"
-    
-    if [ $? -ne 0 ]; then
-       echo "Upload failed!"
-       ERRORCOUNT=$((ERRORCOUNT + 1))
-    fi
-  fi
   
-  echo "Sleeping for 1000s to allow manual debugging..."
-  sleep 1000
+  echo "Showing first 10 lines of raw dump (to check if it's SQL or error text):"
+  head -n 10 /tmp/raw_dump.sql || echo "Empty file"
+  
+  echo "Sleeping for 500s to allow manual debugging..."
+  sleep 500
+  
 
+  [[ ${PIPELINE_STATUS[0]} != 0 || ${PIPELINE_STATUS[1]} != 0 || ${PIPELINE_STATUS[2]} != 0 || ${PIPELINE_STATUS[3]} != 0 ]] && (( ERRORCOUNT += 1 ))
   exit $ERRORCOUNT
 fi
