@@ -156,6 +156,7 @@ else
   
   echo "Sleeping for 500s to allow manual debugging..."
   sleep 500
+  
 
   [[ ${PIPELINE_STATUS[0]} != 0 || ${PIPELINE_STATUS[1]} != 0 || ${PIPELINE_STATUS[2]} != 0 || ${PIPELINE_STATUS[3]} != 0 ]] && (( ERRORCOUNT += 1 ))
   exit $ERRORCOUNT
