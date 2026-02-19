@@ -30,7 +30,7 @@ function dump {
   # --single-transaction: Ensure consistency for InnoDB without locking
   # --quick: Stream output to save memory
   # --routines: Include stored procedures
-  mariadb-dump -h "$MARIADB_HOST" -u "$MARIADB_USER" -p"$MARIADB_PASSWORD" -P "$MARIADB_PORT" "$MARIADB_DATABASE" \
+  mariadb-dump -h "$MARIADB_HOST" -u "$MARIADB_USER" -p"$MARIADB_PASSWORD" -P "$MARIADB_PORT" \
     --single-transaction \
     --quick \
     --routines \
