@@ -42,10 +42,10 @@ function dump {
 
 function compress {
   # Use pigz for multi-threaded compression if available, else gzip
-  command -v pigz >/dev/null 2>&1 && pigz || gzip
+  # command -v pigz >/dev/null 2>&1 && pigz || gzip
 
   # Use gzip explicitly to ensure compatibility
-  # gzip
+  gzip
 }
 
 function az_upload {
@@ -133,7 +133,21 @@ if [ "$LOGICAL_BACKUP_PROVIDER" == "az" ]; then
   upload
 else
   # Stream dump directly to S3 to save disk space
-  dump | tee - | compress | upload
-  [[ ${PIPESTATUS[0]} != 0 || ${PIPESTATUS[1]} != 0 || ${PIPESTATUS[2]} != 0 ]] && (( ERRORCOUNT += 1 ))
+  EXPECTED_SIZE=$(($(estimate_size) / DUMP_SIZE_COEFF))
+  
+  dump | compress | aws_upload "$EXPECTED_SIZE"
+  
+  # Capture status immediately! Running any other command will reset PIPESTATUS.
+  PIPELINE_STATUS=("${PIPESTATUS[@]}")
+
+  # Check logic: 0=success, anything else=failure
+  if [[ ${PIPELINE_STATUS[0]} -ne 0 || ${PIPELINE_STATUS[1]} -ne 0 || ${PIPELINE_STATUS[2]} -ne 0 ]]; then
+    echo "Backup pipeline failed with status: ${PIPELINE_STATUS[*]}"
+    ERRORCOUNT=$((ERRORCOUNT + 1))
+  else
+    # Only cleanup if backup succeeded to avoid deleting the last good backup
+    aws_delete_outdated
+  fi
+
   exit $ERRORCOUNT
 fi
