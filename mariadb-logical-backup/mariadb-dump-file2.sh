@@ -43,7 +43,7 @@ function generate_checksum {
 }
 
 function aws_upload {
-  local EXPECTED_SIZE="$1"
+  EXPECTED_SIZE=$(stat -c%s /tmp/final_upload.sql.gz)
   PATH_TO_BACKUP="s3://${LOGICAL_BACKUP_S3_BUCKET}/${CLUSTER_NAME}/${LOGICAL_BACKUP_S3_BUCKET_SCOPE_SUFFIX}/logical_backups/$(date +%s).sql.gz"
 
   args=()
@@ -63,8 +63,7 @@ else
     dump 2> /tmp/dump_stderr.log | tee /tmp/raw_dump.sql | compress > /tmp/final_upload.sql.gz
     PIPELINE_STATUS=("${PIPESTATUS[@]}")
     generate_checksum /tmp/final_upload.sql.gz
-    EXPECTED_SIZE=$(stat -c%s /tmp/final_upload.sql.gz)
-    aws_upload "${EXPECTED_SIZE}"
+    aws_upload
     sleep 1000
 
     [[ ${PIPELINE_STATUS[0]} != 0 || ${PIPELINE_STATUS[1]} != 0 || ${PIPELINE_STATUS[2]} != 0 ]] && (( ERRORCOUNT += 1 ))
