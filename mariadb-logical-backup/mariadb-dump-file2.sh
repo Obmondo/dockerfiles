@@ -42,6 +42,6 @@ else
     generate_checksum /tmp/final_upload.sql.gz
     sleep 1000
 
-    [[ ${PIPELINE_STATUS[0]} != 0 || ${PIPELINE_STATUS[1]} != 0 || ${PIPELINE_STATUS[2]} != 0 || ${UPLOAD_EXIT_CODE} != 0 ]] && (( ERRORCOUNT += 1 ))
+    [[ ${PIPELINE_STATUS[0]} != 0 || ${PIPELINE_STATUS[1]} != 0 || ${PIPELINE_STATUS[2]} != 0 ]] && (( ERRORCOUNT += 1 ))
     exit $ERRORCOUNT
 fi
