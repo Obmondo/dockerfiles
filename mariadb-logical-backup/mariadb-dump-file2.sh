@@ -43,9 +43,11 @@ function generate_checksum {
 }
 
 function aws_upload {
+  local EXPECTED_SIZE="$1"
   PATH_TO_BACKUP="s3://${LOGICAL_BACKUP_S3_BUCKET}/${CLUSTER_NAME}/${LOGICAL_BACKUP_S3_BUCKET_SCOPE_SUFFIX}/logical_backups/$(date +%s).sql.gz"
 
   args=()
+  [[ -n "${EXPECTED_SIZE}" ]] && args+=("--expected-size=${EXPECTED_SIZE}")
   [[ -n "${LOGICAL_BACKUP_S3_ENDPOINT}" ]] && args+=("--endpoint-url=${LOGICAL_BACKUP_S3_ENDPOINT}")
   [[ -n "${LOGICAL_BACKUP_S3_REGION}" ]] && args+=("--region=${LOGICAL_BACKUP_S3_REGION}")
 
@@ -61,7 +63,8 @@ else
     dump 2> /tmp/dump_stderr.log | tee /tmp/raw_dump.sql | compress > /tmp/final_upload.sql.gz
     PIPELINE_STATUS=("${PIPESTATUS[@]}")
     generate_checksum /tmp/final_upload.sql.gz
-    aws_upload
+    EXPECTED_SIZE=$(stat -c%s /tmp/final_upload.sql.gz)
+    aws_upload "${EXPECTED_SIZE}"
     sleep 1000
 
     [[ ${PIPELINE_STATUS[0]} != 0 || ${PIPELINE_STATUS[1]} != 0 || ${PIPELINE_STATUS[2]} != 0 ]] && (( ERRORCOUNT += 1 ))
