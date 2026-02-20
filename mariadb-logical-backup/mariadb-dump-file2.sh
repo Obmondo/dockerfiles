@@ -51,7 +51,7 @@ function aws_upload {
 
   echo "Uploading dump to S3: ${PATH_TO_BACKUP}"
   echo "${args[@]}"
-  aws s3 cp - "$PATH_TO_BACKUP" "${args[@]}"
+  aws s3 cp /tmp/final_upload.sql.gz "$PATH_TO_BACKUP" "${args[@]}"
 }
 
 
@@ -61,7 +61,7 @@ else
     dump 2> /tmp/dump_stderr.log | tee /tmp/raw_dump.sql | compress > /tmp/final_upload.sql.gz
     PIPELINE_STATUS=("${PIPESTATUS[@]}")
     generate_checksum /tmp/final_upload.sql.gz
-    cat /tmp/final_upload.sql.gz | aws_upload
+    aws_upload
     sleep 1000
 
     [[ ${PIPELINE_STATUS[0]} != 0 || ${PIPELINE_STATUS[1]} != 0 || ${PIPELINE_STATUS[2]} != 0 ]] && (( ERRORCOUNT += 1 ))
