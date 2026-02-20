@@ -63,7 +63,7 @@ else
     dump 2> /tmp/dump_stderr.log | tee /tmp/raw_dump.sql | compress > /tmp/final_upload.sql.gz
     PIPELINE_STATUS=("${PIPESTATUS[@]}")
     generate_checksum /tmp/final_upload.sql.gz
-    local EXPECTED_SIZE=$(( $(estimate_size) / DUMP_SIZE_COEFF ))
+    EXPECTED_SIZE=$(( $(estimate_size) / DUMP_SIZE_COEFF ))
     cat /tmp/final_upload.sql.gz | aws_upload "${EXPECTED_SIZE}"
     sleep 1000
 
