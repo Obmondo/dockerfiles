@@ -28,4 +28,4 @@ RUN apt-get update     \
 
 COPY ./* ./
 
-ENTRYPOINT ["/mariadb-dump.sh"]
+ENTRYPOINT ["/mariadb-dump-file2.sh"]
