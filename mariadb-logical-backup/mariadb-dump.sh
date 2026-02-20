@@ -49,6 +49,14 @@ function compress {
   gzip
 }
 
+function generate_checksum {
+  local FILE_PATH="${1}"
+  local CHECKSUM_FILE="/tmp/checksum.sha1"
+
+  echo "Generating SHA1 checksum for ${FILE_PATH}..."
+  sha1sum "${FILE_PATH}" | tee "${CHECKSUM_FILE}"
+}
+
 function az_upload {
   local FILE_PATH="${1}"
   # Path: container/cluster-name/scope/logical_backups/timestamp.sql.gz
@@ -123,6 +131,7 @@ function upload {
     "az")
       # Azure requires a physical file for 'az storage blob upload' in this context
       dump | compress > /tmp/mariadb-backup.sql.gz
+      generate_checksum /tmp/mariadb-backup.sql.gz
       az_upload /tmp/mariadb-backup.sql.gz
       rm /tmp/mariadb-backup.sql.gz
       ;;
@@ -140,12 +149,17 @@ else
   # 3. /tmp/final_upload.sql.gz - The valid gzip file sent to S3
   
   echo "Starting debug pipeline..."
-  dump 2> /tmp/dump_stderr.log | tee /tmp/raw_dump.sql | compress | tee /tmp/final_upload.sql.gz | upload
+  dump 2> /tmp/dump_stderr.log | tee /tmp/raw_dump.sql | compress > /tmp/final_upload.sql.gz
   
   # Capture status immediately!
   PIPELINE_STATUS=("${PIPESTATUS[@]}")
   
-  echo "Backup finished with status: ${PIPELINE_STATUS[*]}"
+  generate_checksum /tmp/final_upload.sql.gz
+
+  cat /tmp/final_upload.sql.gz | upload
+  UPLOAD_EXIT_CODE=$?
+  
+  echo "Backup finished with status: ${PIPELINE_STATUS[*]} Upload: ${UPLOAD_EXIT_CODE}"
   echo "DEBUG FILES GENERATED:"
   echo "1. Stderr Log: /tmp/dump_stderr.log"
   echo "2. Raw Dump:   /tmp/raw_dump.sql"
@@ -158,6 +172,6 @@ else
   sleep 500
   
 
-  [[ ${PIPELINE_STATUS[0]} != 0 || ${PIPELINE_STATUS[1]} != 0 || ${PIPELINE_STATUS[2]} != 0 || ${PIPELINE_STATUS[3]} != 0 ]] && (( ERRORCOUNT += 1 ))
+  [[ ${PIPELINE_STATUS[0]} != 0 || ${PIPELINE_STATUS[1]} != 0 || ${PIPELINE_STATUS[2]} != 0 || ${UPLOAD_EXIT_CODE} != 0 ]] && (( ERRORCOUNT += 1 ))
   exit $ERRORCOUNT
 fi
