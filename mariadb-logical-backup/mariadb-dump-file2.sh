@@ -51,8 +51,6 @@ function aws_upload {
   [[ -n "${LOGICAL_BACKUP_S3_ENDPOINT}" ]] && args+=("--endpoint-url=${LOGICAL_BACKUP_S3_ENDPOINT}")
   [[ -n "${LOGICAL_BACKUP_S3_REGION}" ]] && args+=("--region=${LOGICAL_BACKUP_S3_REGION}")
 
-  echo "Uploading dump to S3: ${PATH_TO_BACKUP}"
-  echo "${args[@]}"
   aws s3 cp /tmp/final_upload.sql.gz "$PATH_TO_BACKUP" "${args[@]}"
 }
 
