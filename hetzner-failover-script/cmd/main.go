@@ -51,11 +51,13 @@ func prepare(ctx context.Context) (func(), string, time.Duration) {
 		},
 
 		FailoverIP: utils.GetRequiredEnv("FAILOVER_IP"),
-		ServerIP:   utils.GetRequiredEnv("SERVER_IP"),
+		NodeName:   utils.GetRequiredEnv("NODE_NAME"),
 	}
 
 	function := func() {
-		hetzner.PointFailoverIPToServer(ctx, args)
+		if err := hetzner.PointFailoverIPToServer(ctx, args); err != nil {
+			slog.ErrorContext(ctx, "Failover reconcile failed; will retry next interval", slog.Any("err", err))
+		}
 	}
 
 	tag := "HetznerFailover"
