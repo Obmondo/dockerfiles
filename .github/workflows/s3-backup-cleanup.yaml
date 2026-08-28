@@ -26,7 +26,7 @@ jobs:
         with:
           images: ghcr.io/obmondo/s3-backup-cleanup
           tags: |
-            type=raw,value=v1.0.0
+            type=raw,value=v1.0.1
             type=raw,value=latest
           flavor: |
             latest=false
