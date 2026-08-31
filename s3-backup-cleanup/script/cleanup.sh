@@ -17,7 +17,15 @@
 #   RETENTION_DAYS     objects older than this many days are deleted (default: 30)
 #   EXCLUDE_PREFIXES   space-separated top-level prefixes to skip (default: none)
 #   AWS_DEFAULT_REGION region passed to the AWS CLI (default: us-east-1)
-#   BATCH_SIZE         versions per delete-objects call, max 1000 (default: 1000)
+#   BATCH_SIZE         versions per delete-objects call, max 1000 (default: 100).
+#                      The API ceiling is 1000, but rustfs serialises per-object
+#                      locks and returns "Lock acquisition timeout ... after 5s"
+#                      for every key when handed a batch of a few hundred, so the
+#                      default is set by what the server tolerates, not the API.
+#   MAX_RETRIES        attempts per batch when the server reports lock contention
+#                      or times out (default: 5)
+#   RETRY_DELAY        seconds, multiplied by attempt number, between retries (default: 3)
+#   CLI_READ_TIMEOUT   per-request read timeout passed to the AWS CLI (default: 120)
 #   PAGE_SIZE          versions per list-object-versions request (default: 1000)
 #   WORKDIR            scratch directory for batch files (default: ${TMPDIR:-/tmp})
 set -eu
@@ -28,8 +36,11 @@ set -eu
 : "${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is required}"
 : "${RETENTION_DAYS:=30}"
 : "${EXCLUDE_PREFIXES:=}"
-: "${BATCH_SIZE:=1000}"
+: "${BATCH_SIZE:=100}"
 : "${PAGE_SIZE:=1000}"
+: "${MAX_RETRIES:=5}"
+: "${RETRY_DELAY:=3}"
+: "${CLI_READ_TIMEOUT:=120}"
 : "${WORKDIR:=${TMPDIR:-/tmp}}"
 
 CUTOFF=$(date -u -d "-${RETENTION_DAYS} days" +%Y-%m-%dT%H:%M:%SZ)
@@ -57,8 +68,55 @@ render_batch() {
   '
 }
 
+# Submits one prepared batch, retrying while the server reports lock contention.
+# rustfs holds a per-object lock during delete and gives up after 5s, so a busy
+# or large batch comes back with every key failed rather than a partial result.
+# Those are transient and worth retrying; anything else is a real failure.
+delete_batch() {
+  batch_json=$1
+  label=$2
+  attempt=1
+  while :; do
+    if errors=$(aws s3api delete-objects --endpoint-url "$ENDPOINT" \
+          --cli-read-timeout "$CLI_READ_TIMEOUT" \
+          --cli-input-json "file://$batch_json" --query "Errors" --output text 2>"$SCRATCH/stderr"); then
+      # Ask the CLI for the Errors key specifically. Quiet mode is meant to
+      # return only errors, but not every S3 implementation honours it - rustfs
+      # returns the full Deleted list - so treating "any output" as failure
+      # reported a successful delete as an error.
+      if [ -z "$errors" ] || [ "$errors" = "None" ]; then
+        return 0
+      fi
+    fi
+    detail="$errors $(cat "$SCRATCH/stderr" 2>/dev/null)"
+    case "$detail" in
+      *[Ll]ock*|*imeout*|*SlowDown*|*503*)
+        if [ "$attempt" -lt "$MAX_RETRIES" ]; then
+          echo "retry $label: batch contended (attempt $attempt/$MAX_RETRIES)" >&2
+          sleep $((RETRY_DELAY * attempt))
+          attempt=$((attempt + 1))
+          continue
+        fi
+        ;;
+    esac
+    echo "error $label: delete-objects failed after $attempt attempt(s)" >&2
+    echo "$detail" | head -20 >&2
+    exit 1
+  done
+}
+
 for bucket in $BUCKETS; do
-  for prefix in $(aws s3api list-objects-v2 --endpoint-url "$ENDPOINT" --bucket "$bucket" --delimiter "/" --query "CommonPrefixes[].Prefix" --output text); do
+  # Materialise the prefix listing rather than iterating the command substitution
+  # directly: `for x in $(cmd)` discards the exit status, so an unreachable
+  # endpoint produced an empty list and the script exited 0 having cleaned
+  # nothing - reporting success for a total failure.
+  if ! aws s3api list-objects-v2 --endpoint-url "$ENDPOINT" --bucket "$bucket" \
+      --delimiter "/" --query "CommonPrefixes[].Prefix" --output text > "$SCRATCH/prefixes"; then
+    echo "error $bucket: could not list prefixes" >&2
+    exit 1
+  fi
+
+  for prefix in $(cat "$SCRATCH/prefixes"); do
     prefix=${prefix%/}
     skip=0
     for ex in $EXCLUDE_PREFIXES; do
@@ -72,10 +130,13 @@ for bucket in $BUCKETS; do
     # --page-size bounds each ListObjectVersions request; the CLI still walks
     # every page. Without it the server is asked for the whole prefix in one
     # response, which some S3 implementations answer too slowly to complete.
-    aws s3api list-object-versions --endpoint-url "$ENDPOINT" --bucket "$bucket" --prefix "$prefix/" \
-      --page-size "$PAGE_SIZE" \
-      --query "[Versions[?LastModified<=\`$CUTOFF\`], DeleteMarkers[?LastModified<=\`$CUTOFF\`]][].[Key,VersionId]" \
-      --output text > "$SCRATCH/raw"
+    if ! aws s3api list-object-versions --endpoint-url "$ENDPOINT" --bucket "$bucket" --prefix "$prefix/" \
+        --page-size "$PAGE_SIZE" \
+        --query "[Versions[?LastModified<=\`$CUTOFF\`], DeleteMarkers[?LastModified<=\`$CUTOFF\`]][].[Key,VersionId]" \
+        --output text > "$SCRATCH/raw"; then
+      echo "error $bucket/$prefix: could not list object versions" >&2
+      exit 1
+    fi
 
     # Drop the "None" the CLI prints for an empty result, and any line the
     # query did not fill in completely.
@@ -96,13 +157,7 @@ for bucket in $BUCKETS; do
 
     for batch in "$SCRATCH"/batches/batch.*; do
       render_batch "$bucket" < "$batch" > "$batch.json"
-      errors=$(aws s3api delete-objects --endpoint-url "$ENDPOINT" --cli-input-json "file://$batch.json")
-      # Quiet mode returns nothing on success and an Errors array otherwise.
-      if [ -n "$errors" ]; then
-        echo "error $bucket/$prefix: delete-objects reported failures" >&2
-        echo "$errors" >&2
-        exit 1
-      fi
+      delete_batch "$batch.json" "$bucket/$prefix"
     done
 
     echo "clean $bucket/$prefix: permanently removed $count version(s)/marker(s) older than ${RETENTION_DAYS}d"
