@@ -58,7 +58,15 @@ render_batch() {
 }
 
 for bucket in $BUCKETS; do
-  for prefix in $(aws s3api list-objects-v2 --endpoint-url "$ENDPOINT" --bucket "$bucket" --delimiter "/" --query "CommonPrefixes[].Prefix" --output text); do
+  # `for x in $(cmd)` discards the exit status, so an unreachable endpoint gave
+  # an empty list and the script exited 0 having cleaned nothing.
+  if ! aws s3api list-objects-v2 --endpoint-url "$ENDPOINT" --bucket "$bucket" \
+      --delimiter "/" --query "CommonPrefixes[].Prefix" --output text > "$SCRATCH/prefixes"; then
+    echo "error $bucket: could not list prefixes" >&2
+    exit 1
+  fi
+
+  for prefix in $(cat "$SCRATCH/prefixes"); do
     prefix=${prefix%/}
     skip=0
     for ex in $EXCLUDE_PREFIXES; do
@@ -72,10 +80,13 @@ for bucket in $BUCKETS; do
     # --page-size bounds each ListObjectVersions request; the CLI still walks
     # every page. Without it the server is asked for the whole prefix in one
     # response, which some S3 implementations answer too slowly to complete.
-    aws s3api list-object-versions --endpoint-url "$ENDPOINT" --bucket "$bucket" --prefix "$prefix/" \
+    if ! aws s3api list-object-versions --endpoint-url "$ENDPOINT" --bucket "$bucket" --prefix "$prefix/" \
       --page-size "$PAGE_SIZE" \
       --query "[Versions[?LastModified<=\`$CUTOFF\`], DeleteMarkers[?LastModified<=\`$CUTOFF\`]][].[Key,VersionId]" \
-      --output text > "$SCRATCH/raw"
+      --output text > "$SCRATCH/raw"; then
+      echo "error $bucket/$prefix: could not list object versions" >&2
+      exit 1
+    fi
 
     # Drop the "None" the CLI prints for an empty result, and any line the
     # query did not fill in completely.
@@ -96,9 +107,11 @@ for bucket in $BUCKETS; do
 
     for batch in "$SCRATCH"/batches/batch.*; do
       render_batch "$bucket" < "$batch" > "$batch.json"
-      errors=$(aws s3api delete-objects --endpoint-url "$ENDPOINT" --cli-input-json "file://$batch.json")
-      # Quiet mode returns nothing on success and an Errors array otherwise.
-      if [ -n "$errors" ]; then
+      # rustfs ignores Quiet and returns the full Deleted list, so "any output"
+      # is not a failure signal. Ask for the Errors key specifically.
+      errors=$(aws s3api delete-objects --endpoint-url "$ENDPOINT" \
+        --cli-input-json "file://$batch.json" --query "Errors" --output text)
+      if [ -n "$errors" ] && [ "$errors" != "None" ]; then
         echo "error $bucket/$prefix: delete-objects reported failures" >&2
         echo "$errors" >&2
         exit 1
