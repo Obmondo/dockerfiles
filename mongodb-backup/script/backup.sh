@@ -20,14 +20,27 @@ notify() {
 # Run backup
 mongodump ${OPTIONS} -o "${LOCAL_DUMP_LOCATION}"
 status=$?
-if [ "${status}" -eq "1" ]; then
-  echo "ERROR: Mongodump failed."
+if [ "${status}" -ne 0 ]; then
+  echo "ERROR: Mongodump failed with exit code ${status}."
+  notify 1
+  exit 1
+fi
+
+# Verify dump directory exists and is not empty before archiving
+if [ ! -d "${LOCAL_DUMP_LOCATION}" ] || [ -z "$(ls -A "${LOCAL_DUMP_LOCATION}" 2>/dev/null)" ]; then
+  echo "ERROR: ${LOCAL_DUMP_LOCATION} does not exist or is empty. No collections dumped."
   notify 1
   exit 1
 fi
 
 # Compress backup
 tar -cvzf "${LOCAL_BACKUP_ROOT_FOLDER}/${BACKUP_NAME}" "${LOCAL_DUMP_LOCATION}"
+status=$?
+if [ "${status}" -ne 0 ]; then
+  echo "ERROR: Tar compression failed with exit code ${status}."
+  notify 1
+  exit 1
+fi
 
 # If the AWS_S3_ENDPOINT variable isn't empty, then populate the --endpoint-url parameter to use a custom S3 compatable endpoint
 if [ ! -z "$AWS_S3_ENDPOINT" ]; then
