@@ -25,7 +25,7 @@ jobs:
         with:
           images: ghcr.io/obmondo/dockerfiles/repository-snapshot
           tags: |
-            type=semver,pattern={{version}},value=v3.1.5
+            type=semver,pattern={{version}},value=v3.1.6
           flavor: |
             latest=false
       - name: Login to GitHub Container Registry
