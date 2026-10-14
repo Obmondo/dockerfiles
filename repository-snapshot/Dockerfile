@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
   obmondo-repository-mirror
 
 # Create a crontab file for the scheduled job
-RUN echo "0 2 * * 0 /usr/local/bin/snapshot_repo >> /var/log/snapshot_repo.log 2>&1" > /etc/cron.d/snapshot_repo && \
+RUN echo "30 21 * * 6 /usr/local/bin/snapshot_repo >> /var/log/snapshot_repo.log 2>&1" > /etc/cron.d/snapshot_repo && \
     chmod 0644 /etc/cron.d/snapshot_repo
 
 # Apply cron job and create log file
